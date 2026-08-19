@@ -80,6 +80,3 @@ Native backups (exported from this app) fully replace the database on import.
   export later).
 - Reordering uses up/down buttons rather than drag-and-drop — deliberate, it's
   simpler and keyboard-friendly.
-- The Rust side was written against tauri 2 / tauri-plugin-sql 2 but has not
-  been compile-checked in the environment this project was generated in; if
-  `cargo` complains about plugin API drift, the fixes should be mechanical.
