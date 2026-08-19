@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <title>SMB Report Card</title>
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <!-- Toast -->
+    <div id="toast-msg" class="toast bg-pos-400 text-base-900 font-semibold"></div>
+
+    <!-- Header -->
+    <header class="bg-base-700 border-b border-base-500 sticky top-0 z-40 no-print">
+      <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="text-2xl">📊</span>
+          <div>
+            <h1 class="text-lg md:text-xl font-bold text-txt-100">SMB Report Card</h1>
+            <p class="text-xs text-txt-400" id="header-date"></p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1 bg-base-800 rounded-xl p-1">
+          <button class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-colors tab-active bg-base-600" data-tab="daily">Daily Entry</button>
+          <button class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-colors tab-inactive" data-tab="weekly">Weekly Summary</button>
+          <button class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-colors tab-inactive" data-tab="settings">Setup</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Backup bar -->
+    <div class="backup-bar sticky top-[57px] z-30 no-print">
+      <div class="max-w-7xl mx-auto px-4 md:px-6 py-2 flex flex-wrap items-center gap-3">
+        <button id="export-backup-btn" class="backup-btn-export min-h-[36px]">
+          <i data-lucide="download"></i> Export backup
+        </button>
+        <button id="import-backup-btn" class="backup-btn-import min-h-[36px]">
+          <i data-lucide="upload"></i> Import backup
+        </button>
+        <span class="text-xs text-txt-500 hidden sm:inline" id="db-path-hint">Data is stored in a local SQLite database.</span>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 md:px-6 py-6">
+
+      <!-- ============ DAILY TAB ============ -->
+      <div id="daily-tab" class="fade-in">
+        <!-- Overall grade card -->
+        <div class="bg-base-700 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-center gap-5 border border-base-500">
+          <div class="grade-ring flex-shrink-0">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#353849" stroke-width="8" />
+              <circle id="grade-ring-circle" cx="60" cy="60" r="52" fill="none" stroke="#22c55e" stroke-width="8" stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="326.73" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span id="grade-letter" class="text-3xl font-bold text-pos-400">—</span>
+              <span id="grade-num" class="text-xs text-txt-300 tabular-nums">0.0</span>
+            </div>
+          </div>
+          <div class="text-center sm:text-left">
+            <p class="text-sm text-txt-400 font-medium uppercase tracking-wide">Overall Daily Grade</p>
+            <p id="grade-label" class="text-xl font-bold text-txt-100 mt-1">No Data</p>
+            <p class="text-xs text-txt-400 mt-1" id="grade-composite-hint">Composite of all category averages</p>
+          </div>
+          <div class="hidden sm:flex flex-1"></div>
+          <div class="flex flex-col gap-2 text-right">
+            <div class="flex items-center gap-2 text-xs text-txt-300"><span class="w-2 h-2 rounded-full bg-pos-400 inline-block"></span> Elite (9–10)</div>
+            <div class="flex items-center gap-2 text-xs text-txt-300"><span class="w-2 h-2 rounded-full bg-blu-400 inline-block"></span> Solid (7–8.9)</div>
+            <div class="flex items-center gap-2 text-xs text-txt-300"><span class="w-2 h-2 rounded-full bg-gold-400 inline-block"></span> Developing (5–6.9)</div>
+            <div class="flex items-center gap-2 text-xs text-txt-300"><span class="w-2 h-2 rounded-full bg-orn-400 inline-block"></span> Needs Work (3–4.9)</div>
+            <div class="flex items-center gap-2 text-xs text-txt-300"><span class="w-2 h-2 rounded-full bg-neg-400 inline-block"></span> Reset Required (0–2.9)</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Left column -->
+          <div class="flex flex-col gap-6" id="daily-col-left">
+            <!-- Session overview (static) -->
+            <section class="bg-base-700 rounded-2xl p-5 border border-base-500">
+              <div class="flex items-center gap-2 mb-4">
+                <i data-lucide="calendar" class="w-5 h-5 text-pos-400"></i>
+                <h2 class="text-base font-semibold text-txt-100">Session Overview</h2>
+                <span class="tooltip-trigger ml-1" tabindex="0"><i data-lucide="help-circle" class="w-4 h-4 text-txt-400"></i><span class="tooltip-box">Basic session details: date, session type, time window, instruments traded, and trade counts by setup quality.</span></span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">Date</label>
+                  <input type="date" id="entry-date" />
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">Session</label>
+                  <select id="session-type">
+                    <option>Asian Session</option>
+                    <option selected>NY Open</option>
+                    <option>London Open</option>
+                    <option>London/NY Overlap</option>
+                    <option>Custom</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">Session Start</label>
+                  <input type="time" id="session-start" />
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">Session End</label>
+                  <input type="time" id="session-end" />
+                </div>
+                <div class="sm:col-span-2 flex items-center gap-3">
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide flex-shrink-0">Elapsed</label>
+                  <span class="elapsed-pill"><span style="font-size:1rem;line-height:1;">⏱️</span> <span id="elapsed-display">—</span></span>
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">Primary Instrument(s)</label>
+                  <input type="text" id="instruments" placeholder="e.g. USDJPY, AUDUSD, NZDUSD" />
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block"># Trades Taken</label>
+                  <input type="number" id="trades-taken" min="0" value="0" />
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block"># Planned Trades</label>
+                  <input type="number" id="planned-trades" min="0" value="0" />
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block"># A-Setup Trades</label>
+                  <input type="number" id="a-setups" min="0" value="0" />
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block"># B-Setup Trades</label>
+                  <input type="number" id="b-setups" min="0" value="0" />
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block"># C-Setup or Lower</label>
+                  <input type="number" id="c-setups" min="0" value="0" />
+                </div>
+              </div>
+            </section>
+            <!-- Dynamic category sections appended here -->
+          </div>
+
+          <!-- Right column -->
+          <div class="flex flex-col gap-6" id="daily-col-right">
+            <!-- Dynamic category sections prepended here; notes + save stay at bottom -->
+            <section class="bg-base-700 rounded-2xl p-5 border border-base-500" id="notes-section">
+              <div class="flex items-center gap-2 mb-4">
+                <i data-lucide="pencil" class="w-5 h-5 text-pos-400"></i>
+                <h2 class="text-base font-semibold text-txt-100">Session Notes</h2>
+                <span class="tooltip-trigger ml-1" tabindex="0"><i data-lucide="help-circle" class="w-4 h-4 text-txt-400"></i><span class="tooltip-box">Reflect on your session. Record what worked, what didn't, and what to focus on tomorrow.</span></span>
+              </div>
+              <div class="flex flex-col gap-4">
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">What I did well today</label>
+                  <textarea id="note-well" placeholder="Describe your strengths this session..."></textarea>
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">What I need to improve</label>
+                  <textarea id="note-improve" placeholder="Areas for improvement..."></textarea>
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">Key lesson or insight</label>
+                  <textarea id="note-lesson" placeholder="Main takeaway from today..."></textarea>
+                </div>
+                <div>
+                  <label class="text-xs text-txt-400 font-medium uppercase tracking-wide mb-1 block">Tomorrow's focus / intention</label>
+                  <textarea id="note-focus" placeholder="What will you focus on tomorrow?"></textarea>
+                </div>
+              </div>
+            </section>
+
+            <div class="flex flex-col sm:flex-row gap-3" id="save-load-row">
+              <button id="save-day-btn" class="flex-1 bg-pos-400 hover:bg-pos-500 text-base-900 font-semibold py-3 px-6 rounded-xl transition-colors flex items-center justify-center gap-2 min-h-[44px]">
+                <i data-lucide="save" class="w-5 h-5"></i> Save Day Entry
+              </button>
+              <div class="flex-1 relative">
+                <select id="load-prev-sel" class="w-full py-3 px-4 pr-10 min-h-[44px] font-medium">
+                  <option value="">Load Previous Entry…</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ WEEKLY TAB ============ -->
+      <div id="weekly-tab" class="hidden fade-in">
+        <div class="bg-base-700 rounded-2xl p-5 mb-6 border border-base-500 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div class="flex items-center gap-2">
+            <i data-lucide="calendar-range" class="w-5 h-5 text-pos-400"></i>
+            <h2 class="text-base font-semibold text-txt-100">Week Selector</h2>
+          </div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <button id="week-prev-btn" class="p-2 bg-base-600 rounded-lg hover:bg-base-500 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+            <span id="week-range-label" class="text-sm font-medium text-txt-200 tabular-nums min-w-[200px] text-center"></span>
+            <button id="week-next-btn" class="p-2 bg-base-600 rounded-lg hover:bg-base-500 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+          </div>
+          <button id="gen-week-btn" class="bg-pos-400 hover:bg-pos-500 text-base-900 font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center gap-2 min-h-[44px] sm:ml-auto">
+            <i data-lucide="bar-chart-3" class="w-5 h-5"></i> Generate Week Summary
+          </button>
+        </div>
+
+        <div id="weekly-content" class="hidden fade-in">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-base-700 rounded-2xl p-4 border border-base-500 text-center">
+              <p class="text-2xl font-bold text-txt-100 tabular-nums" id="wk-total-trades">0</p>
+              <p class="text-xs text-txt-400 font-medium uppercase tracking-wide mt-1">Total Trades</p>
+            </div>
+            <div class="bg-base-700 rounded-2xl p-4 border border-base-500 text-center">
+              <p class="text-2xl font-bold text-txt-100 tabular-nums" id="wk-a-setups">0</p>
+              <p class="text-xs text-txt-400 font-medium uppercase tracking-wide mt-1">A-Setups Taken</p>
+            </div>
+            <div class="bg-base-700 rounded-2xl p-4 border border-base-500 text-center">
+              <p class="text-2xl font-bold text-gold-400 tabular-nums" id="wk-a-pct">0%</p>
+              <p class="text-xs text-txt-400 font-medium uppercase tracking-wide mt-1">% A-Setups</p>
+            </div>
+            <div class="bg-base-700 rounded-2xl p-4 border border-base-500 text-center">
+              <p class="text-2xl font-bold tabular-nums" id="wk-avg-grade">—</p>
+              <p class="text-xs text-txt-400 font-medium uppercase tracking-wide mt-1">Avg Daily Grade</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-base-700 rounded-2xl p-5 border border-base-500">
+              <h3 class="text-sm font-semibold text-txt-100 mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-pos-400"></i>Weekly Average by Category</h3>
+              <div class="relative h-64 md:h-72"><canvas id="weekly-chart"></canvas></div>
+            </div>
+            <div class="flex flex-col gap-4">
+              <div class="bg-base-700 rounded-2xl p-5 border border-base-500 flex-1">
+                <h3 class="text-sm font-semibold text-pos-400 mb-3 flex items-center gap-2"><i data-lucide="trophy" class="w-4 h-4"></i>Strengths This Week</h3>
+                <div id="wk-strengths" class="flex flex-col gap-2"></div>
+              </div>
+              <div class="bg-base-700 rounded-2xl p-5 border border-base-500 flex-1">
+                <h3 class="text-sm font-semibold text-gold-400 mb-3 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i>Focus Areas</h3>
+                <div id="wk-focus" class="flex flex-col gap-2"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-base-700 rounded-2xl p-5 border border-base-500 mb-6 overflow-x-auto">
+            <h3 class="text-sm font-semibold text-txt-100 mb-4 flex items-center gap-2"><i data-lucide="table" class="w-4 h-4 text-pos-400"></i>Day-by-Day Breakdown</h3>
+            <table class="w-full text-sm min-w-[600px]">
+              <thead>
+                <tr class="text-xs text-txt-400 uppercase tracking-wide border-b border-base-500" id="wk-grid-head"></tr>
+              </thead>
+              <tbody id="wk-grid-body"></tbody>
+            </table>
+          </div>
+
+          <div class="bg-base-700 rounded-2xl p-5 border border-base-500 mb-6">
+            <h3 class="text-sm font-semibold text-txt-100 mb-3 flex items-center gap-2"><i data-lucide="message-square" class="w-4 h-4 text-pos-400"></i>Weekly Reflection</h3>
+            <textarea id="wk-reflection" placeholder="Write your reflection for this week…" class="min-h-[120px]"></textarea>
+            <div class="flex flex-col sm:flex-row gap-3 mt-4">
+              <button id="save-wk-notes-btn" class="bg-pos-400 hover:bg-pos-500 text-base-900 font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center justify-center gap-2 min-h-[44px]">
+                <i data-lucide="save" class="w-4 h-4"></i> Save Weekly Notes
+              </button>
+              <button id="print-wk-btn" class="bg-base-600 hover:bg-base-500 text-txt-100 font-medium py-2.5 px-5 rounded-xl transition-colors flex items-center justify-center gap-2 min-h-[44px]">
+                <i data-lucide="printer" class="w-4 h-4"></i> Print / Export
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div id="weekly-empty" class="bg-base-700 rounded-2xl p-12 border border-base-500 text-center">
+          <i data-lucide="bar-chart-3" class="w-12 h-12 text-txt-500 mx-auto mb-4"></i>
+          <p class="text-txt-300 text-sm">Select a week and click <strong class="text-pos-400">Generate Week Summary</strong> to see your weekly analysis.</p>
+        </div>
+      </div>
+
+      <!-- ============ SETTINGS TAB ============ -->
+      <div id="settings-tab" class="hidden fade-in">
+        <div class="bg-base-700 rounded-2xl p-5 mb-6 border border-base-500">
+          <div class="flex items-center gap-2">
+            <i data-lucide="settings" class="w-5 h-5 text-pos-400"></i>
+            <h2 class="text-base font-semibold text-txt-100">Metric Setup</h2>
+          </div>
+          <p class="text-xs text-txt-400 mt-2 leading-relaxed">
+            Edit the categories and metrics used on the Daily Entry tab. Changes apply to new entries;
+            saved days keep the scores they were graded with. Retiring a metric hides it from new entries
+            without deleting historical data. Renames apply everywhere, including past entries.
+          </p>
+        </div>
+        <div id="settings-categories" class="flex flex-col gap-6"></div>
+        <div class="mt-6 flex flex-col sm:flex-row gap-3">
+          <button id="add-category-btn" class="bg-pos-400 hover:bg-pos-500 text-base-900 font-semibold py-2.5 px-5 rounded-xl transition-colors flex items-center justify-center gap-2 min-h-[44px]">
+            <i data-lucide="plus" class="w-4 h-4"></i> Add Category
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <footer class="py-6 text-center no-print">
+      <p class="text-xs text-txt-500">SMB-style daily report card · local SQLite</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
